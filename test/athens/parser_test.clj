@@ -113,10 +113,27 @@
      " as "
      [:url-link {:url "https://example.com/c"} "separate"]
      "."]
-    "Multiple [links](https://example.com/a) [are detected](#b) as [separate](https://example.com/c)."
+    "Multiple [links](https://example.com/a) [are detected](#b) as [separate](https://example.com/c)."))
 
-    [:block [:url-link {:url "https://raw-link.com"} "https://raw-link.com"]]
-    "https://raw-link.com"))
+
+(deftest parser-url-raw-link-tests
+  (are [x y] (= x (parse-to-ast y))
+    [:block [:url-link {:url "https://example.com"} "https://example.com"]]
+    "https://example.com"
+
+    [:block [:url-link {:url "http://example.com/"} "http://example.com/"]]
+    "https://example.com/"
+
+    [:block [:url-link {:url "http://example-hyphenated.net"} "http://example-hyphenated.net"]]
+    "http://example-hyphenated.net"
+
+    [:block
+     "Visit "
+     [:url-link
+      {:url "https://subdomain.example.com/path/page.html?query=so%20simple&p=5#top"}
+      "https://subdomain.example.com/path/page.html?query=so%20simple&p=5#top"]
+     " for the answer"]
+    "Visit https://subdomain.example.com/path/page.html?query=so%20simple&p=5#top for the answer"))
 
 
 (deftest parser-url-image-tests
