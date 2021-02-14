@@ -20,7 +20,7 @@
    (* This first rule is the top-level one. *)
    (* `/` ordered alternation is used to, for example, try to interpret a string beginning with '[[' as a page-link before interpreting it as raw characters. *)
    block = (url-raw / non-reserved-chars / pre-formatted / syntax-in-block / reserved-char) *
-
+   
    (* The following regular expression expresses this: (any character except '`') <- This repeated as many times as possible *)
    <any-non-pre-formatted-chars> = #'[^\\`]*'
    pre-formatted = block-pre-formatted | inline-pre-formatted
@@ -28,7 +28,7 @@
    <inline-pre-formatted> = <'`'> any-non-pre-formatted-chars <'`'>
    
    (* Because code blocks are pre-formatted, we process them before these applied syntaxes. *)
-   <syntax-in-block> = (component | page-link | block-ref | hashtag | url-image | url-link | bold)
+   <syntax-in-block> = (component | page-link | block-ref | hashtag | url-link | url-image | bold)
    
    <syntax-in-component> = (page-link | block-ref)
    <any-non-component-reserved-chars> = #'[^\\{\\}]*'
@@ -43,11 +43,10 @@
    block-ref = <'(('> #'[a-zA-Z0-9_\\-]+' <'))'>
    
    hashtag = hashtag-bare | hashtag-delimited
-   <hashtag-bare> = <'#'> #'[^\\ \\+\\!\\@\\#\\$\\%\\^\\&\\*\\(\\)\\?\\\"\\;\\:\\]\\[]+'  (* Unicode: L = letters, M = combining marks, N = numbers *)
+   <hashtag-bare> = <'#'> #'[^\\ \\+\\!\\@\\#\\$\\%\\^\\&\\*\\(\\)\\?\\\"\\;\\:\\]\\[]+'
    <hashtag-delimited> = <'#'> <'[['> page-link-content <']]'>
-
+   
    url-raw = #'(?i)\\b(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?\\b'
-   url-image = <'!'> url-link-text url-link-url
    
    url-link = url-link-text url-link-url
    <url-link-text> = <'['> url-link-text-contents <']'>
@@ -58,12 +57,11 @@
    <url-link-url-part> = (backslash-escaped-paren | '(' url-link-url-part* ')') / any-char
    <backslash-escaped-paren> = <'\\\\'> ('(' | ')')
    
+   url-image = <'!'> url-link-text url-link-url
+   
    (* The following regular expression expresses this: (any character except '*') <- This repeated as many times as possible *)
    <non-bold-chars> = #'[^\\*]*'
    bold = <'**'> non-bold-chars <'**'>
-   
-   (* -- It’s useful to extract this rule because its transform joins the individual characters everywhere it’s used. *)
-   (* -- However, I think in many cases a more specific rule can be used. So we will migrate away from uses of this rule. *)
    
    (* Here are a list of 'stop characters' we implemented, to get the LL(1) performance. *)
    (* The current reserved characters are:  ->  ( [ * < ` {  # ! <- *)
@@ -74,7 +72,6 @@
    <reserved-char> =       #'[\\(\\[\\*\\<\\`\\{\\#\\!]'
    <non-reserved-chars> = #'[^\\(\\[\\*\\<\\`\\{\\#\\!]*'
    <any-char> = #'\\w|\\W'
-   <any-chars> = #'[\\w|\\W]+'
    
    ")
 
@@ -101,17 +98,15 @@
     {:block                  (fn [& raw-contents]
                                 ;; use combine-adjacent-strings to collapse individual characters from any-char into one string
                                (into [:block] (combine-adjacent-strings raw-contents)))
-     :url-image              (fn [[text-contents] url]
-                               (into [:url-image {:url url :alt text-contents}]))
      :url-link               (fn [text-contents url]
                                (into [:url-link {:url url}] text-contents))
+     :url-image              (fn [[text-contents] url]
+                               (into [:url-image {:url url :alt text-contents}]))
      :url-raw                (fn [url]
                                [:url-link {:url url} url])
      :url-link-text-contents (fn [& raw-contents]
                                (combine-adjacent-strings raw-contents))
      :url-link-url-parts     (fn [& chars]
-                               (string/join chars))
-     :any-chars              (fn [& chars]
                                (string/join chars))
      :component              (fn [raw-content-string]
                                (into [:component raw-content-string] (rest (block-parser raw-content-string))))}

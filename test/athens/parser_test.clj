@@ -76,13 +76,6 @@
     "{{AnotherComponent}} Another Content"))
 
 
-(deftest parser-url-image-tests
-  ;; Few tests because this parser largely depends on `url-link`
-  (are [x y] (= x (parse-to-ast y))
-    [:block [:url-image {:url "https://example.com/image.png" :alt "an example image"}]]
-    "![an example image](https://example.com/image.png)"))
-
-
 (deftest parser-url-link-tests
   (are [x y] (= x (parse-to-ast y))
     [:block [:url-link {:url "https://example.com/"} "an example"]]
@@ -124,6 +117,13 @@
 
     [:block [:url-link {:url "https://raw-link.com"} "https://raw-link.com"]]
     "https://raw-link.com"))
+
+
+(deftest parser-url-image-tests
+  ;; Few tests because this parser largely depends on `url-link`
+  (are [x y] (= x (parse-to-ast y))
+    [:block [:url-image {:url "https://example.com/image.png" :alt "an example image"}]]
+    "![an example image](https://example.com/image.png)"))
 
 
 (deftest combine-adjacent-strings-tests
